@@ -1,12 +1,21 @@
 import socket
 import threading
 import sys
+import os
 
 SERVER_IP = input("Masukkan IP Server: ")
 SERVER_PORT = int(input("Masukkan Port Server: "))  # Input port dari user
-PASSWORD = "securepassword"
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+
+def clear_screen():
+    # Windows
+    if os.name == 'nt':
+        os.system('cls')
+    # Linux / MacOS
+    else:
+        os.system('clear')
 
 def clear_last_line():
     sys.stdout.write("\033[F\033[K")
@@ -29,7 +38,7 @@ def join_chatroom():
         except socket.timeout:
             print("Timeout: Server tidak merespon. Periksa IP dan Port.")
             return None
-        
+
         if response.decode() == "PASSWORD OK":
             break
         else:
@@ -40,6 +49,7 @@ def join_chatroom():
         client_socket.sendto(f"USERNAME {username}".encode(), (SERVER_IP, SERVER_PORT))
         response, _ = client_socket.recvfrom(1024)
         if response.decode() == "USERNAME OK":
+            clear_screen()
             print("Bergabung dengan chatroom...")
             return username
         elif response.decode() == "USERNAME TAKEN":
@@ -50,7 +60,6 @@ def join_chatroom():
 def main():
     # Tambahkan timeout untuk menangani koneksi yang gagal
     client_socket.settimeout(5)
-    
     try:
         username = join_chatroom()
         if username:

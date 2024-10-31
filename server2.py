@@ -2,7 +2,7 @@ import socket
 import threading
 import queue
 
-SERVER_IP = "0.0.0.0"
+SERVER_IP = input("Masukkan IP untuk Server: ")  # Input IP dari admin server
 SERVER_PORT = int(input("Masukkan Port untuk Server: "))  # Input port dari admin server
 PASSWORD = input("Masukkan Password untuk Server: ")
 
@@ -62,7 +62,7 @@ def handle_client():
                         print(f"{username} bergabung dari {address}")
             else:
                 username = message.split(':')[0]
-                print(f"{username}@{address}: {message}")
+                print(f"{message}")
                 messages.put((message.encode(), address))
         except Exception as e:
             print(f"Error: {e}")
