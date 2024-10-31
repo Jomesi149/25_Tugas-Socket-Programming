@@ -3,13 +3,12 @@ import threading
 import sys
 
 SERVER_IP = input("Masukkan IP Server: ")
-SERVER_PORT = 12345
+SERVER_PORT = int(input("Masukkan Port Server: "))  # Input port dari user
 PASSWORD = "securepassword"
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 def clear_last_line():
-    # Menggerakkan kursor ke atas dan menghapus baris
     sys.stdout.write("\033[F\033[K")
     sys.stdout.flush()
 
@@ -22,49 +21,66 @@ def receive_messages():
             break
 
 def join_chatroom():
-    # Kirim password
-    client_socket.sendto(f"PASSWORD {PASSWORD}".encode(), (SERVER_IP, SERVER_PORT))
-    response, _ = client_socket.recvfrom(1024)
-    
-    if response.decode() == "PASSWORD OK":
-        # Kirim username jika password benar
-        while True:
-            username = input("Masukkan username: ")
-            client_socket.sendto(f"USERNAME {username}".encode(), (SERVER_IP, SERVER_PORT))
+    while True:  # Loop untuk password
+        password = input("Masukkan password: ")
+        client_socket.sendto(f"PASSWORD {password}".encode(), (SERVER_IP, SERVER_PORT))
+        try:
             response, _ = client_socket.recvfrom(1024)
-            if response.decode() == "USERNAME OK":
-                print("Bergabung dengan chatroom...")
-                return username
-            elif response.decode() == "USERNAME TAKEN":
-                print("Username telah digunakan!")
-            else:
-                print("Terjadi kesalahan. Coba lagi.")
-    else:
-        print("Password salah!")
-        return None
+        except socket.timeout:
+            print("Timeout: Server tidak merespon. Periksa IP dan Port.")
+            return None
+        
+        if response.decode() == "PASSWORD OK":
+            break
+        else:
+            print("Password salah! Coba lagi.")
+    
+    while True:
+        username = input("Masukkan username: ")
+        client_socket.sendto(f"USERNAME {username}".encode(), (SERVER_IP, SERVER_PORT))
+        response, _ = client_socket.recvfrom(1024)
+        if response.decode() == "USERNAME OK":
+            print("Bergabung dengan chatroom...")
+            return username
+        elif response.decode() == "USERNAME TAKEN":
+            print("Username telah digunakan!")
+        else:
+            print("Terjadi kesalahan. Coba lagi.")
 
 def main():
-    username = join_chatroom()
-    if username:
-        # Mulai thread untuk menerima pesan
-        receive_thread = threading.Thread(target=receive_messages)
-        receive_thread.daemon = True
-        receive_thread.start()
+    # Tambahkan timeout untuk menangani koneksi yang gagal
+    client_socket.settimeout(5)
+    
+    try:
+        username = join_chatroom()
+        if username:
+            # Reset timeout setelah berhasil terhubung
+            client_socket.settimeout(None)
+            
+            receive_thread = threading.Thread(target=receive_messages)
+            receive_thread.daemon = True
+            receive_thread.start()
 
-        print("Ketik 'exit' untuk keluar.")
-        
-        while True:
-            message = input("> ")
-            clear_last_line()
-            if message.lower() == 'exit':
-                print("Keluar dari chatroom...")
-                break
-                
-            # Format pesan dengan username
-            formatted_message = f"{username}: {message}"
-            client_socket.sendto(formatted_message.encode(), (SERVER_IP, SERVER_PORT))
+            print("Ketik 'exit' untuk keluar.")
+            
+            while True:
+                message = input("> ")
+                clear_last_line()
+                if message.lower() == 'exit':
+                    print("Keluar dari chatroom...")
+                    break
+                    
+                formatted_message = f"{username}: {message}"
+                client_socket.sendto(formatted_message.encode(), (SERVER_IP, SERVER_PORT))
 
-    client_socket.close()
+    except ValueError:
+        print("Port harus berupa angka!")
+    except ConnectionRefusedError:
+        print("Koneksi ditolak. Periksa IP dan Port.")
+    except Exception as e:
+        print(f"Terjadi kesalahan: {e}")
+    finally:
+        client_socket.close()
 
 if __name__ == "__main__":
     main()
