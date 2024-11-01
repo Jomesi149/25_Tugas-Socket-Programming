@@ -1,7 +1,6 @@
 import socket
 import threading
 import sys
-import os
 
 SERVER_IP = input("Masukkan IP Server: ")
 SERVER_PORT = int(input("Masukkan Port Server: "))  # Input port dari user
@@ -10,18 +9,17 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 
 def clear_screen():
-    # Windows
-    if os.name == 'nt':
-        os.system('cls')
-    # Linux / MacOS
-    else:
-        os.system('clear')
+    #Untuk membersihkan tampilan terminal
+    sys.stdout.write("\033[H\033[J")
+    sys.stdout.flush()
 
 def clear_last_line():
+    #untuk menghapus baris terakhir setelah input message
     sys.stdout.write("\033[F\033[K")
     sys.stdout.flush()
 
 def receive_messages():
+    #untuk menerima hasil broadcast dari server
     while True:
         try:
             message, _ = client_socket.recvfrom(1024)
@@ -44,7 +42,7 @@ def join_chatroom():
         else:
             print("Password salah! Coba lagi.")
     
-    while True:
+    while True: # Loop untuk username
         username = input("Masukkan username: ")
         client_socket.sendto(f"USERNAME {username}".encode(), (SERVER_IP, SERVER_PORT))
         response, _ = client_socket.recvfrom(1024)

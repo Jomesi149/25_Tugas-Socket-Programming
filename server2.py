@@ -4,7 +4,7 @@ import queue
 
 SERVER_IP = input("Masukkan IP untuk Server: ")  # Input IP dari admin server
 SERVER_PORT = int(input("Masukkan Port untuk Server: "))  # Input port dari admin server
-PASSWORD = input("Masukkan Password untuk Server: ")
+PASSWORD = input("Masukkan Password untuk Server: ") # Input password dari admin server
 
 clients = []
 messages = queue.Queue()
