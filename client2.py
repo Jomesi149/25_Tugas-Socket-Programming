@@ -2,19 +2,8 @@ import socket
 import threading
 import sys
 
-while True:
-    SERVER_IP = input("Masukkan IP Server: ")
-    try:
-        socket.inet_aton(SERVER_IP)
-        break
-    except socket.error:
-        print("IP tidak valid. Coba lagi.")
-while True:
-    try:
-        SERVER_PORT = int(input("Masukkan Port Server: "))
-        break
-    except ValueError:
-        print("Port tidak valid. Coba lagi.")
+SERVER_IP = input("Masukkan IP Server: ")
+SERVER_PORT = int(input("Masukkan Port Server: "))
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
