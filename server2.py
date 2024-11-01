@@ -8,7 +8,7 @@ PASSWORD = input("Masukkan Password untuk Server: ") # Input password dari admin
 
 clients = []
 messages = queue.Queue()
-usernames = set()
+usernames = {}
 
 try:
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -27,17 +27,13 @@ def broadcast():
     while True:
         while not messages.empty():
             message, addr = messages.get()
-            if addr not in clients:
-                clients.append(addr)
             for client in clients:
                 try:
-                    if message.decode().startswith("SIGNUP_TAG:"):
-                        name = message.decode()[message.decode().index(":")+1:]
-                        server_socket.sendto(f"{name} bergabung ke chatroom.".encode(), client)
-                    else:
-                        server_socket.sendto(message, client)
-                except:
-                    clients.remove(client)
+                    server_socket.sendto(message, client)
+                except socket.error as e:
+                    # Handle disconnection errors gracefully
+                    if client in clients:
+                        clients.remove(client)
 
 def handle_client():
     while True:
@@ -53,23 +49,32 @@ def handle_client():
                         server_socket.sendto(b"PASSWORD INCORRECT", address)
                 elif message.startswith("USERNAME "):
                     username = message.split()[1]
-                    if username in usernames:
+                    if username in usernames.values():
                         server_socket.sendto(b"USERNAME TAKEN", address)
                     else:
-                        usernames.add(username)
-                        messages.put((f"SIGNUP_TAG:{username}".encode(), address))
+                        usernames[address] = username
+                        clients.append(address)
+                        messages.put((f"{username} bergabung ke chatroom.".encode(), address))
                         server_socket.sendto(b"USERNAME OK", address)
                         print(f"{username} bergabung dari {address}")
             else:
-                username = message.split(':')[0]
-                print(f"{message}")
-                messages.put((message.encode(), address))
-        except Exception as e:
+                if message.lower().strip() == "exit":
+                    username = usernames.pop(address, "User")
+                    exit_message = f"{username} telah keluar dari chatroom."
+                    messages.put((exit_message.encode(), address))
+                    clients.remove(address)
+                    print(exit_message)
+                else:
+                    print(f"{message}")
+                    messages.put((message.encode(), address))
+        except socket.error as e:
+            if e.errno == 10054:
+                continue
             print(f"Error: {e}")
 
 if __name__ == "__main__":
     print(f"Password: {PASSWORD}")
-    
+
     broadcast_thread = threading.Thread(target=broadcast)
     broadcast_thread.daemon = True
     broadcast_thread.start()
@@ -82,5 +87,5 @@ if __name__ == "__main__":
         while True:
             pass
     except KeyboardInterrupt:
-        print("\nServer shutting down...")
+        print("\\nServer shutting down...")
         server_socket.close()
